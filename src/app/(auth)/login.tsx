@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Input } from '@/components/ui/Input';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/useAuthStore';
+import { skipAuthForDev } from '@/utils/devAuth';
 import { toast } from '@/utils/toast';
 
 export default function LoginScreen() {
@@ -99,6 +100,14 @@ export default function LoginScreen() {
           </Text>
         </Pressable>
       </Link>
+
+      {__DEV__ && (
+        <Pressable onPress={skipAuthForDev} className="items-center py-1">
+          <Text className="text-xs text-gray-400 dark:text-gray-600">
+            Skip login (dev only)
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }

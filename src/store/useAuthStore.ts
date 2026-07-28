@@ -13,9 +13,11 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updateProfile: (updates: { name?: string; avatarUrl?: string }) => Promise<{ error: string | null }>;
+  uploadAvatar: (localUri: string) => Promise<{ url: string | null; error: string | null }>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   user: null,
   isAuthenticated: false,
@@ -52,5 +54,40 @@ export const useAuthStore = create<AuthState>((set) => ({
   resetPassword: async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     return { error: error?.message ?? null };
+  },
+
+  updateProfile: async ({ name, avatarUrl }) => {
+    const data: Record<string, string> = {};
+    if (name !== undefined) data.name = name;
+    if (avatarUrl !== undefined) data.avatar_url = avatarUrl;
+
+    const { error } = await supabase.auth.updateUser({ data });
+    return { error: error?.message ?? null };
+  },
+
+  uploadAvatar: async (localUri: string) => {
+    const user = get().user;
+    if (!user) return { url: null, error: 'You must be signed in.' };
+
+    try {
+      const response = await fetch(localUri);
+      const arrayBuffer = await response.arrayBuffer();
+      const fileExt = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const path = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, arrayBuffer, {
+          contentType: `image/${fileExt}`,
+          upsert: true,
+        });
+
+      if (uploadError) return { url: null, error: uploadError.message };
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      return { url: `${data.publicUrl}?updated=${Date.now()}`, error: null };
+    } catch {
+      return { url: null, error: 'Failed to upload avatar.' };
+    }
   },
 }));
