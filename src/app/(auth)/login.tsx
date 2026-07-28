@@ -1,0 +1,104 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Link } from 'expo-router';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+
+import { Input } from '@/components/ui/Input';
+import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
+import { useAuthStore } from '@/store/useAuthStore';
+import { toast } from '@/utils/toast';
+
+export default function LoginScreen() {
+  const signIn = useAuthStore((state) => state.signIn);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
+    setIsSubmitting(true);
+    const { error } = await signIn(data.email, data.password);
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
+    toast.success('Welcome back!');
+  };
+
+  return (
+    <View className="flex-1 justify-center gap-4 bg-white px-6 dark:bg-black">
+      <Text className="mb-4 text-center text-2xl font-bold text-black dark:text-white">
+        Login
+      </Text>
+
+      <Controller
+        control={control}
+        name="email"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="Email"
+            placeholder="you@example.com"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            onChangeText={onChange}
+            onBlur={onBlur}
+            value={value}
+            error={errors.email?.message}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="password"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <Input
+            label="Password"
+            placeholder="••••••••"
+            isPassword
+            onChangeText={onChange}
+            onBlur={onBlur}
+            value={value}
+            error={errors.password?.message}
+          />
+        )}
+      />
+
+      <Pressable
+        onPress={handleSubmit(onSubmit)}
+        disabled={isSubmitting}
+        className="mt-2 items-center rounded-lg bg-black py-3 disabled:opacity-50 dark:bg-white"
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#ffffff" />
+        ) : (
+          <Text className="font-semibold text-white dark:text-black">Log In</Text>
+        )}
+      </Pressable>
+
+      <Link href="/(auth)/forgot-password" asChild>
+        <Pressable className="items-center py-1">
+          <Text className="text-sm text-black dark:text-white">Forgot password?</Text>
+        </Pressable>
+      </Link>
+
+      <Link href="/(auth)/register" asChild>
+        <Pressable className="items-center py-3">
+          <Text className="text-black dark:text-white">
+            Don&apos;t have an account? Register
+          </Text>
+        </Pressable>
+      </Link>
+    </View>
+  );
+}
