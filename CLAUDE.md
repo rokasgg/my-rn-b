@@ -104,3 +104,20 @@ src/
 - Uploading is a two-step flow, always in this order: `uploadAvatar(localUri)` (uploads to the Supabase Storage `avatars` bucket at `${user.id}/avatar.<ext>`, `upsert: true`, returns a cache-busted public URL) then `updateProfile({ avatarUrl })` to persist it on the user. Never skip the second call — the uploaded file isn't reflected in `user_metadata` until you do.
 - Display avatars with `expo-image`'s `<Image source={{ uri }} contentFit="cover" className="rounded-full ..." />`, not `react-native`'s `Image` — falls back to a `Ionicons name="person"` placeholder circle when there's no `avatar_url`.
 - Requires a public Supabase Storage bucket named `avatars` to exist on the project (not created by app code) — check for it before assuming avatar upload works end-to-end on a fresh Supabase project.
+
+## Testing
+- Stack: `jest-expo` (preset) + `jest` + `@testing-library/react-native` + `react-test-renderer`. Run with `npm test` (or `npm run test:watch`); both are aliased to pass `--watchman=false` since some sandboxed/CI environments can't spawn the `watchman` binary.
+- Config lives inline in `package.json`'s `"jest"` key (not a separate `jest.config.js`) — includes the `@/` → `src/` `moduleNameMapper` and RN `transformIgnorePatterns`. `tsconfig.json` has `"types": ["jest"]` so test globals typecheck.
+- Wired into CI (`.github/workflows/ci.yml`) as a step after lint — a failing test blocks the PR the same as a failing typecheck.
+- Three-layer pattern, one file per unit, colocated as `<name>.test.ts(x)` next to the source:
+  - **Validation schemas** (`src/lib/validations/*.ts`) — pure `schema.safeParse(...)` assertions, no mocking. See `auth.test.ts`.
+  - **Zustand stores** (`src/store/*.ts`) — `jest.mock('@/lib/supabase')`, call the action via `useStore.getState()`, assert the `{ error: string | null }` contract (never-throws) per the Zustand Stores rules above. See `useAuthStore.test.ts`.
+  - **UI components** (`src/components/ui/*.tsx`) — render + `fireEvent` with RNTL, assert on rendered text/behavior, not implementation details. See `Button.test.tsx`.
+- Screens (`src/app/**`) are intentionally not covered yet — add screen-level tests only once a screen has real business logic beyond the scaffolding, not for every new route.
+- Known dependency wrinkle: installing test deps requires `npm install ... --legacy-peer-deps` because `react-native@0.86.0`'s bundled `@react-native/jest-preset` version trails what `jest-expo` declares as a peer by a patch version. This is a version-lag nit, not a real incompatibility — re-check whether it's still needed after any Expo SDK bump, and remove the flag/pin once versions line up.
+
+## Maintaining This File
+- Claude: whenever you discover a non-obvious project fact during a session — a dependency version conflict and its workaround, a new tool/library added to the stack, a convention the user corrects you on, a gotcha in how something is wired — add or update the relevant section here before ending the session, not just in chat.
+- Prefer updating an existing section over creating a new one; only add a new `##` heading when the topic doesn't fit anywhere above.
+- Keep entries factual and specific (what, why, workaround) rather than narrating the debugging process — future-you needs the conclusion, not the journey.
+- If a documented fact turns out to be stale (a workaround no longer needed, a library replaced), correct or remove it rather than leaving both the old and new versions in the file.
