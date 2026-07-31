@@ -1,0 +1,33 @@
+{
+  "cli": {
+    "version": ">= 13.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "distribution": "internal",
+      "developmentClient": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-dev-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-dev-anon-key"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-staging-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-staging-anon-key"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-prod-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "your-prod-anon-key"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

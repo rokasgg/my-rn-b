@@ -5,6 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { Input } from '@/components/ui/Input';
+import { colors } from '@/lib/theme';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import { useAuthStore } from '@/store/useAuthStore';
 import { skipAuthForDev } from '@/utils/devAuth';
@@ -81,7 +82,7 @@ export default function LoginScreen() {
         className="mt-2 items-center rounded-lg bg-black py-3 disabled:opacity-50 dark:bg-white"
       >
         {isSubmitting ? (
-          <ActivityIndicator color="#ffffff" />
+          <ActivityIndicator color={colors.white} />
         ) : (
           <Text className="font-semibold text-white dark:text-black">Log In</Text>
         )}

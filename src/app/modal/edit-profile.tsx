@@ -7,6 +7,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { Input } from '@/components/ui/Input';
+import { useSession } from '@/hooks/useSession';
+import { colors } from '@/lib/theme';
 import { editProfileSchema, type EditProfileFormData } from '@/lib/validations/profile';
 import { useAuthStore } from '@/store/useAuthStore';
 import { pickAvatarImage } from '@/utils/image';
@@ -14,7 +16,7 @@ import { toast } from '@/utils/toast';
 
 export default function EditProfileModal() {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
+  const { user } = useSession();
   const uploadAvatar = useAuthStore((state) => state.uploadAvatar);
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,12 +44,14 @@ export default function EditProfileModal() {
   };
 
   const onSubmit = async (data: EditProfileFormData) => {
+    if (!user) return;
+
     setIsSubmitting(true);
 
     let avatarUrl: string | undefined;
 
     if (data.avatarUri) {
-      const { url, error: uploadError } = await uploadAvatar(data.avatarUri);
+      const { url, error: uploadError } = await uploadAvatar(user.id, data.avatarUri);
 
       if (uploadError || !url) {
         setIsSubmitting(false);
@@ -82,7 +86,7 @@ export default function EditProfileModal() {
             />
           ) : (
             <View className="h-24 w-24 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800">
-              <Ionicons name="person" size={40} color="#8e8e93" />
+              <Ionicons name="person" size={40} color={colors.gray} />
             </View>
           )}
         </Pressable>
@@ -121,7 +125,7 @@ export default function EditProfileModal() {
           className="flex-1 items-center rounded-lg bg-black py-3 disabled:opacity-50 dark:bg-white"
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#ffffff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
             <Text className="font-semibold text-white dark:text-black">Save</Text>
           )}

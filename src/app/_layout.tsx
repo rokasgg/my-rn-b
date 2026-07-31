@@ -1,50 +1,33 @@
 import '../../global.css';
 
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
-import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/useAuthStore';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useSession } from '@/hooks/useSession';
+import { queryClient } from '@/lib/queryClient';
 
-export default function RootLayout() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isInitialized = useAuthStore((state) => state.isInitialized);
-  const setSession = useAuthStore((state) => state.setSession);
+function RootLayoutNav() {
+  const { session, isLoading } = useSession();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    if (isLoading) return;
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => {
-      subscription.subscription.unsubscribe();
-    };
-  }, [setSession]);
-
-  // TEMP: auth redirect gate disabled for local UI development without a working Supabase backend.
-  // Re-enable before shipping.
-  useEffect(() => {
-    if (!isInitialized) return;
-  
+    const isAuthenticated = !!session;
     const inAuthGroup = segments[0] === '(auth)';
-  
+
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isInitialized, segments, router]);
-/* ______________________________________________________________ */
+  }, [session, isLoading, segments, router]);
 
-
-  if (!isInitialized) {
+  if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-black">
         <ActivityIndicator />
@@ -53,13 +36,23 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen
-        name="modal/edit-profile"
-        options={{ presentation: 'modal', headerShown: true, title: 'Edit Profile' }}
-      />
-    </Stack>
+    <ErrorBoundary>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen
+          name="modal/edit-profile"
+          options={{ presentation: 'modal', headerShown: true, title: 'Edit Profile' }}
+        />
+      </Stack>
+    </ErrorBoundary>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RootLayoutNav />
+    </QueryClientProvider>
   );
 }

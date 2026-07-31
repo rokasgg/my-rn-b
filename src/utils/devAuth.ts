@@ -1,6 +1,7 @@
 import type { Session, User } from '@supabase/supabase-js';
 
-import { useAuthStore } from '@/store/useAuthStore';
+import { sessionQueryKey } from '@/hooks/useSession';
+import { queryClient } from '@/lib/queryClient';
 
 const DEV_USER: User = {
   id: 'dev-user-id',
@@ -28,5 +29,5 @@ const DEV_SESSION: Session = {
  * update, sign out) will still fail against a real/placeholder project.
  */
 export function skipAuthForDev() {
-  useAuthStore.getState().setSession(DEV_SESSION);
+  queryClient.setQueryData(sessionQueryKey, DEV_SESSION);
 }

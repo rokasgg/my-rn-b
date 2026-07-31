@@ -1,37 +1,21 @@
-import type { Session, User } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import { supabase } from '@/lib/supabase';
 
-interface AuthState {
-  session: Session | null;
-  user: User | null;
-  isAuthenticated: boolean;
-  isInitialized: boolean;
-  setSession: (session: Session | null) => void;
+// session/user live in the React Query cache via useSession() — this store
+// only wraps the write-side Supabase auth calls. It currently holds no state
+// of its own; the auth results flow back through onAuthStateChange into the
+// query cache rather than through a `set()` call here (see useSession.ts).
+interface AuthActions {
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updateProfile: (updates: { name?: string; avatarUrl?: string }) => Promise<{ error: string | null }>;
-  uploadAvatar: (localUri: string) => Promise<{ url: string | null; error: string | null }>;
+  uploadAvatar: (userId: string, localUri: string) => Promise<{ url: string | null; error: string | null }>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  session: null,
-  user: null,
-  isAuthenticated: false,
-  isInitialized: false,
-
-  setSession: (session) => {
-    set({
-      session,
-      user: session?.user ?? null,
-      isAuthenticated: !!session,
-      isInitialized: true,
-    });
-  },
-
+export const useAuthStore = create<AuthActions>(() => ({
   signUp: async (email: string, password: string, name: string) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -65,15 +49,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return { error: error?.message ?? null };
   },
 
-  uploadAvatar: async (localUri: string) => {
-    const user = get().user;
-    if (!user) return { url: null, error: 'You must be signed in.' };
-
+  uploadAvatar: async (userId: string, localUri: string) => {
     try {
       const response = await fetch(localUri);
       const arrayBuffer = await response.arrayBuffer();
       const fileExt = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const path = `${user.id}/avatar.${fileExt}`;
+      const path = `${userId}/avatar.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')

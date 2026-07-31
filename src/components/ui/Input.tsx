@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useState } from 'react';
 import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
 
+import { colors } from '@/lib/theme';
+
 export interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
@@ -28,7 +30,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       <View className="relative justify-center">
         <TextInput
           ref={ref}
-          placeholderTextColor="#8e8e93"
+          placeholderTextColor={colors.gray}
           secureTextEntry={hideText}
           className={`rounded-lg border px-4 py-3 text-black dark:text-white ${
             error ? 'border-red-600 dark:border-red-500' : 'border-gray-300 dark:border-gray-700'
@@ -46,7 +48,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             <Ionicons
               name={isVisible ? 'eye-off' : 'eye'}
               size={20}
-              color="#8e8e93"
+              color={colors.gray}
             />
           </Pressable>
         )}
